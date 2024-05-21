@@ -1,3 +1,15 @@
+# IMPORTANT NOTE:
+When pulling this repo (either a pull in another local copy, or to fetch the changes from the previous commit), run this command:
+```bash
+git update-index --skip-worktree backend/src/main/resources/application.properties
+```
+This will ensure that any changes to that file on your local machine will not update the existing file in this repo. That's important because database login information needs to be put there for the backend to be able to login to do its work.
+
+\- Bruce
+
+P.S.<br>
+I'll have updated this README by the 23rd to include all setup information and removing the unrelated default Expo app stuff.
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
