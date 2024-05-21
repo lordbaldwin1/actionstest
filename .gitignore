@@ -1,15 +1,5 @@
-node_modules/
-.expo/
-expo-env.d.ts
-dist/
-npm-debug.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.orig.*
-web-build/
+# Note: There are frontend/backend-specific gitignores
+# in subdirectories that contain their own ignoring rules.
 
-# macOS
-.DS_Store
+### VS Code ###
+**/.vscode/
