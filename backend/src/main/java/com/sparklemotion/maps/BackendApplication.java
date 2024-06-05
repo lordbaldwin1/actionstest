@@ -7,7 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @ComponentScan(basePackages = "com.sparklemotion.*")
 public class BackendApplication {
-  public static void main(String[] args) {
+      public static void main(String[] args) {
     SpringApplication.run(BackendApplication.class, args);
   }
 }
