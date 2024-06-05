@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
-//COMMENT TEST HEHEHE
+// COMMENT TEST HEHEHE
 
 @SpringBootApplication
 @ComponentScan(basePackages = "com.sparklemotion.*")
