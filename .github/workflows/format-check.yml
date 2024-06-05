@@ -1,0 +1,144 @@
+name: Format Backend
+
+on:
+  push:
+    branches:
+      - main
+  pull_request_target:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  google-java-format:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Check if google-java-format.jar exists (Windows)
+        if: runner.os == 'Windows'
+        id: check-format-jar-windows
+        run: |
+          if (Test-Path -Path "./backend/google-java-format.jar") {
+            echo "exists=true" >> $env:GITHUB_ENV
+          } else {
+            echo "exists=false" >> $env:GITHUB_ENV
+          }
+
+      - name: Check if google-java-format.jar exists (Linux, macOS)
+        if: runner.os != 'Windows'
+        id: check-format-jar-unix
+        run: |
+          if [ -f "./backend/google-java-format.jar" ]; then
+            echo "exists=true" >> $GITHUB_ENV
+          else
+            echo "exists=false" >> $GITHUB_ENV
+          fi
+
+      - name: Download google-java-format if it does not exist (Windows)
+        if: runner.os == 'Windows' && env.exists == 'false'
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/google/google-java-format/releases/download/v1.11.0/google-java-format-1.11.0-all-deps.jar" -OutFile "google-java-format.jar"
+          Move-Item google-java-format.jar -Destination ./backend/
+
+      - name: Download google-java-format if it does not exist (Linux, macOS)
+        if: runner.os != 'Windows' && env.exists == 'false'
+        run: |
+          curl -L -o google-java-format.jar "https://github.com/google/google-java-format/releases/download/v1.11.0/google-java-format-1.11.0-all-deps.jar"
+          mv google-java-format.jar ./backend/
+
+      - name: List files in backend directory (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ./backend
+        run: dir
+
+      - name: List files in backend directory (Linux, macOS)
+        if: runner.os != 'Windows'
+        working-directory: ./backend
+        run: ls -l
+
+      - name: Format Java files (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ./backend
+        run: |
+          java --add-exports jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED `
+               --add-exports jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED `
+               --add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED `
+               --add-exports jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED `
+               --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED `
+               --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED `
+               -jar google-java-format.jar --replace $(Get-ChildItem -Recurse -Filter *.java | ForEach-Object { $_.FullName })
+
+      - name: Format Java files (Linux, macOS)
+        if: runner.os != 'Windows'
+        working-directory: ./backend
+        run: |
+          java --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED \
+               --add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED \
+               --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED \
+               --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED \
+               --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED \
+               --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED \
+               -jar google-java-format.jar --replace $(find . -name '*.java')
+
+      - name: Commit and push changes if any (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ./backend
+        run: |
+          $branchName = git rev-parse --abbrev-ref HEAD
+          if ($branchName -eq 'HEAD') {
+            $branchName = '${{ github.head_ref }}'
+            git checkout $branchName
+          }
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m 'style: apply Google Java format' || echo 'No changes to commit'
+          git pull --rebase origin $branchName
+          git push origin $branchName
+
+      - name: Commit and push changes if any (Linux, macOS)
+        if: runner.os != 'Windows'
+        working-directory: ./backend
+        run: |
+          branchName=$(git rev-parse --abbrev-ref HEAD)
+          if [ "$branchName" = "HEAD" ]; then
+            branchName="${{ github.head_ref }}"
+            git checkout $branchName
+          fi
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "style: apply Google Java format" || echo "No changes to commit"
+          git pull --rebase origin $branchName
+          git push origin $branchName
+
+      - name: Fail if there are uncommitted changes (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ./backend
+        run: |
+          git diff-index --quiet HEAD || exit 1
+
+      - name: Fail if there are uncommitted changes (Linux, macOS)
+        if: runner.os != 'Windows'
+        working-directory: ./backend
+        run: |
+          git diff-index --quiet HEAD || exit 1
