@@ -23,16 +23,22 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ./frontend/node_modules
+          key: node-modules-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            node-modules-
+
       - name: Install dependencies
         run: npm install
         working-directory: ./frontend
 
-      - name: Run ESLint
-        run: npm run lint
-        working-directory: ./frontend
-
-      - name: Run Prettier
-        run: npx prettier --write .
+      - name: Run ESLint and Prettier
+        run: |
+          npm run lint
+          npx prettier --write .
         working-directory: ./frontend
 
       - name: Commit and push changes if any
